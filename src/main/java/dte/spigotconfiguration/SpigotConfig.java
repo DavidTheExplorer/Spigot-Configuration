@@ -1,17 +1,20 @@
 package dte.spigotconfiguration;
 
-import static dte.spigotconfiguration.utils.Utils.toInternalPath;
 import static dte.spigotconfiguration.utils.Utils.loadDataFolder;
 import static dte.spigotconfiguration.utils.Utils.loadResourceConfig;
+import static dte.spigotconfiguration.utils.Utils.toInternalPath;
 import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
 public class SpigotConfig
@@ -19,18 +22,18 @@ public class SpigotConfig
 	private final File file;
 	private final YamlConfiguration config;
 	
-	protected SpigotConfig(File file, YamlConfiguration config) 
+	private SpigotConfig(File file, YamlConfiguration config)
 	{
 		this.file = file;
 		this.config = config;
 	}
 
-	public static SpigotConfig byPath(Plugin plugin, String path) throws IOException 
+	public static SpigotConfig byPath(Plugin plugin, String path) throws IOException
 	{
 		return byPath(plugin, path, false);
 	}
 
-	public static SpigotConfig from(Plugin plugin, String resourceName) throws IOException 
+	public static SpigotConfig fromInternalResource(Plugin plugin, String resourceName) throws IOException 
 	{
 		return byPath(plugin, resourceName, true);
 	}
@@ -38,15 +41,12 @@ public class SpigotConfig
 	private static SpigotConfig byPath(Plugin plugin, String path, boolean resource) throws IOException
 	{
 		File file = new File(loadDataFolder(plugin), toInternalPath(path));
-		file.getParentFile().mkdirs();
-		file.createNewFile();
-		
 		YamlConfiguration config = getConfiguration(plugin, file, resource);
 		
 		return new SpigotConfig(file, config);
 	}
 
-	public YamlConfiguration getConfig() 
+	public YamlConfiguration getStorage() 
 	{
 		return this.config;
 	}
@@ -56,10 +56,30 @@ public class SpigotConfig
 		return this.file;
 	}
 
-	public <T> List<T> getList(String path, Class<T> type)
+	public void set(String path, Object object) 
+	{
+		this.config.set(path, object);
+	}
+
+	public void delete(String path) 
+	{
+		this.config.set(path, null);
+	}
+
+	public void clear()
+	{
+		this.config.getKeys(false).forEach(this::delete);
+	}
+
+	public void save() throws IOException
+	{
+		this.config.save(this.file);
+	}
+
+	public <T> List<T> getList(String path, Class<T> typeClass)
 	{
 		return this.config.getList(path, new ArrayList<>()).stream()
-				.map(type::cast)
+				.map(typeClass::cast)
 				.collect(toList());
 	}
 
@@ -70,37 +90,67 @@ public class SpigotConfig
 		return section != null ? section : this.config.createSection(path);
 	}
 
-	public boolean exists() 
-	{
-		return this.file.exists();
-	}
 
-	public void save() throws IOException
-	{
-		this.config.save(this.file);
-	}
 
-	public void delete(String path) 
+	private static YamlConfiguration getConfiguration(Plugin plugin, File file, boolean resource) throws IOException 
 	{
-		this.config.set(path, null);
-	}
+		if(resource) 
+		{
+			if(file.exists())
+			{
+				return loadResourceConfig(plugin, file);
+			}
+			else
+			{
+				plugin.saveResource(file.getName(), false);
+				
+				return YamlConfiguration.loadConfiguration(file);
+			}
+		}
 
-	public void clear() throws IOException
-	{
-		this.config.getKeys(false).forEach(this::delete);
-		save();
-	}
+		file.getParentFile().mkdirs();
+		file.createNewFile();
 
-	private static YamlConfiguration getConfiguration(Plugin plugin, File file, boolean resource) 
-	{
-		if(!resource)
-			return YamlConfiguration.loadConfiguration(file);
-		
-		if(file.exists())
-			return loadResourceConfig(plugin, file);
-
-		plugin.saveResource(file.getPath(), false);
-		
 		return YamlConfiguration.loadConfiguration(file);
+	}
+
+
+
+	/*
+	 * Delegation of common methods to YamlConfiguration
+	 */
+	public String getString(String path)
+	{
+		return this.config.getString(path);
+	}
+
+	public int getInt(String path)
+	{
+		return this.config.getInt(path);
+	}
+
+	public double getDouble(String path) 
+	{
+		return this.config.getDouble(path);
+	}
+
+	public boolean getBoolean(String path)
+	{
+		return this.config.getBoolean(path);
+	}
+
+	public ItemStack getItemStack(String path) 
+	{
+		return this.config.getItemStack(path);
+	}
+
+	public Set<String> getKeys(String path, boolean deep) 
+	{
+		return this.config.getKeys(deep);
+	}
+
+	public Map<String, Object> getValues(String path, boolean deep) 
+	{
+		return this.config.getValues(deep);
 	}
 }

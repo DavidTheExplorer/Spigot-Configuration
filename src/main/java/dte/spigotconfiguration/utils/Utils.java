@@ -29,25 +29,18 @@ public class Utils
 		return path;
 	}
 	
-	public static YamlConfiguration loadResourceConfig(Plugin plugin, File file) 
+	public static YamlConfiguration loadResourceConfig(Plugin plugin, File file) throws IOException
 	{
 		YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-		YamlConfiguration internalConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(file.getName())));
-
+		
 		//regenerate missing fields from the internal config
+		YamlConfiguration internalConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(file.getName())));
 		config.setDefaults(internalConfig);
 		config.options().copyDefaults(true);
 
-		//save the config to reflect the changes 
-		try
-		{
-			config.save(file);
-		} 
-		catch(IOException exception) 
-		{
-			exception.printStackTrace();
-		}
-
+		//save the config to reflect the changes
+		config.save(file);
+		
 		return config;
 	}
 }
