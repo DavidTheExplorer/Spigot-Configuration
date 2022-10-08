@@ -17,6 +17,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
+import dte.spigotconfiguration.exceptions.ConfigLoadException;
+
 public class SpigotConfig
 {
 	private final File file;
@@ -28,22 +30,29 @@ public class SpigotConfig
 		this.config = config;
 	}
 
-	public static SpigotConfig byPath(Plugin plugin, String path) throws IOException
+	public static SpigotConfig byPath(Plugin plugin, String path) throws ConfigLoadException
 	{
 		return byPath(plugin, path, false);
 	}
 
-	public static SpigotConfig fromInternalResource(Plugin plugin, String resourceName) throws IOException 
+	public static SpigotConfig fromInternalResource(Plugin plugin, String resourceName) throws ConfigLoadException 
 	{
 		return byPath(plugin, resourceName, true);
 	}
 
-	private static SpigotConfig byPath(Plugin plugin, String path, boolean resource) throws IOException
+	private static SpigotConfig byPath(Plugin plugin, String path, boolean resource) throws ConfigLoadException
 	{
-		File file = new File(loadDataFolder(plugin), toInternalPath(path));
-		YamlConfiguration config = getConfiguration(plugin, file, resource);
-		
-		return new SpigotConfig(file, config);
+		try 
+		{
+			File file = new File(loadDataFolder(plugin), toInternalPath(path));
+			YamlConfiguration config = getConfiguration(plugin, file, resource);
+
+			return new SpigotConfig(file, config);
+		}
+		catch(Exception exception) 
+		{
+			throw new ConfigLoadException(path, resource);
+		}
 	}
 
 	public YamlConfiguration getStorage() 
