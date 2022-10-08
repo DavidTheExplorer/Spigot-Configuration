@@ -128,6 +128,11 @@ public class SpigotConfig
 	/*
 	 * Delegation of common methods to YamlConfiguration
 	 */
+	public Object get(String path) 
+	{
+		return this.config.get(path);
+	}
+	
 	public String getString(String path)
 	{
 		return this.config.getString(path);
@@ -153,12 +158,12 @@ public class SpigotConfig
 		return this.config.getItemStack(path);
 	}
 
-	public Set<String> getKeys(String path, boolean deep) 
+	public Set<String> getKeys(boolean deep) 
 	{
 		return this.config.getKeys(deep);
 	}
 
-	public Map<String, Object> getValues(String path, boolean deep) 
+	public Map<String, Object> getValues(boolean deep) 
 	{
 		return this.config.getValues(deep);
 	}
