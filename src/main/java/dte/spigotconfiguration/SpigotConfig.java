@@ -51,7 +51,7 @@ public class SpigotConfig
 		}
 		catch(Exception exception) 
 		{
-			throw new ConfigLoadException(path, resource);
+			throw new ConfigLoadException(path, resource, exception);
 		}
 	}
 
