@@ -7,9 +7,9 @@ public class ConfigLoadException extends RuntimeException
 	private final String path;
 	private boolean resource;
 	
-	public ConfigLoadException(String path, boolean resource) 
+	public ConfigLoadException(String path, boolean resource, Throwable cause) 
 	{
-		super(String.format("Cannot load a config file at: %s", path));
+		super(String.format("Cannot load the config '%s' due to: %s", path, cause.getMessage()), cause);
 		
 		this.path = path;
 		this.resource = resource;
