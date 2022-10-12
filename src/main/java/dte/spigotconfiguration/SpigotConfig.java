@@ -1,8 +1,8 @@
 package dte.spigotconfiguration;
 
-import static dte.spigotconfiguration.utils.PluginUtils.loadDataFolder;
-import static dte.spigotconfiguration.utils.PluginUtils.toResourcePath;
-import static dte.spigotconfiguration.utils.YamlConfigurationUtils.getInternalPath;
+import static dte.spigotconfiguration.utils.YamlConfigurationUtils.loadConfiguration;
+import static dte.spigotconfiguration.utils.YamlConfigurationUtils.loadDataFolder;
+import static dte.spigotconfiguration.utils.YamlConfigurationUtils.toResourcePath;
 import static java.util.stream.Collectors.toList;
 
 import java.io.File;
@@ -18,7 +18,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
 import dte.spigotconfiguration.exceptions.ConfigLoadException;
-import dte.spigotconfiguration.utils.YamlConfigurationUtils;
 
 public class SpigotConfig
 {
@@ -174,24 +173,6 @@ public class SpigotConfig
 		public SpigotConfig build()
 		{
 			return new SpigotConfig(this);
-		}
-		
-		private static YamlConfiguration loadConfiguration(Plugin plugin, File file, boolean resource) throws IOException 
-		{
-			if(resource)
-			{
-				if(file.exists())
-					return YamlConfigurationUtils.loadResourceConfig(plugin, file);
-				
-				plugin.saveResource(getInternalPath(plugin, file), false);
-
-				return YamlConfiguration.loadConfiguration(file);
-			}
-
-			file.getParentFile().mkdirs();
-			file.createNewFile();
-
-			return YamlConfiguration.loadConfiguration(file);
 		}
 	}
 }
