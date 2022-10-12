@@ -1,5 +1,6 @@
 package dte.spigotconfiguration;
 
+import static dte.spigotconfiguration.utils.YamlConfigurationUtils.getInternalPath;
 import static dte.spigotconfiguration.utils.YamlConfigurationUtils.loadConfiguration;
 import static dte.spigotconfiguration.utils.YamlConfigurationUtils.loadDataFolder;
 import static dte.spigotconfiguration.utils.YamlConfigurationUtils.toResourcePath;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -138,8 +140,10 @@ public class SpigotConfig
 	public static class Builder
 	{
 		private final Plugin plugin;
+		
 		private File file;
 		private YamlConfiguration config;
+		private boolean resource;
 		
 		public Builder(Plugin plugin) 
 		{
@@ -155,13 +159,38 @@ public class SpigotConfig
 		{
 			return byPath(resourceName, true);
 		}
-		
+
+		public Builder withDefault(String path, Object value) 
+		{
+			Objects.requireNonNull(this.config, "Cannot set a default value for an unloaded config!");
+			
+			this.config.addDefault(path, value);
+			return this;
+		}
+
+		public Builder applyDefaults() throws ConfigLoadException
+		{
+			Objects.requireNonNull(this.config, "Cannot apply default values for an unloaded config!");
+			
+			try 
+			{
+				this.config.options().copyDefaults(true);
+				this.config.save(this.file);
+				return this;
+			} 
+			catch(Exception exception)
+			{
+				throw new ConfigLoadException("Cannot apply default values to", getInternalPath(this.plugin, file), this.resource, exception);
+			}
+		}
+
 		private Builder byPath(String path, boolean resource) throws ConfigLoadException
 		{
 			try 
 			{
 				this.file = new File(loadDataFolder(this.plugin), toResourcePath(path));
 				this.config = loadConfiguration(this.plugin, this.file, resource);
+				this.resource = resource;
 				return this;
 			}
 			catch(IOException exception) 
