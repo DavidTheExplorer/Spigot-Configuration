@@ -9,6 +9,7 @@ import static java.util.stream.Collectors.toList;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,6 +17,8 @@ import java.util.Set;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
@@ -44,6 +47,12 @@ public class SpigotConfig
 		return new Builder(plugin)
 				.fromInternalResource(resourceName)
 				.build();
+	}
+	
+	@SafeVarargs
+	public static void register(Class<? extends ConfigurationSerializable>... serializables) 
+	{
+		Arrays.stream(serializables).forEach(ConfigurationSerialization::registerClass);
 	}
 
 	public YamlConfiguration getStorage() 
