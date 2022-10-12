@@ -141,6 +141,8 @@ public class SpigotConfig
 	{
 		private final Plugin plugin;
 		
+		private String namePattern;
+		
 		private File file;
 		private YamlConfiguration config;
 		private boolean resource;
@@ -148,6 +150,12 @@ public class SpigotConfig
 		public Builder(Plugin plugin) 
 		{
 			this.plugin = plugin;
+		}
+		
+		public Builder withNamePattern(String pattern) 
+		{
+			this.namePattern = pattern;
+			return this;
 		}
 
 		public Builder byPath(String path) throws ConfigLoadException
@@ -186,7 +194,10 @@ public class SpigotConfig
 
 		private Builder byPath(String path, boolean resource) throws ConfigLoadException
 		{
-			try 
+			if(this.namePattern != null)
+				path = this.namePattern.replace("%name%", path);
+			
+			try
 			{
 				this.file = new File(loadDataFolder(this.plugin), toResourcePath(path));
 				this.config = loadConfiguration(this.plugin, this.file, resource);
