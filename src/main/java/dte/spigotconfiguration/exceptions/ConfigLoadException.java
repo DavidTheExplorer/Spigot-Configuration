@@ -9,7 +9,12 @@ public class ConfigLoadException extends RuntimeException
 	
 	public ConfigLoadException(String path, boolean resource, Throwable cause) 
 	{
-		super(String.format("Cannot load the config '%s' due to: %s", path, cause.getMessage()), cause);
+		this("Cannot load", path, resource, cause);
+	}
+	
+	public ConfigLoadException(String message, String path, boolean resource, Throwable cause) 
+	{
+		super(String.format(createMessageFormat(message), path, cause.getMessage()), cause);
 		
 		this.path = path;
 		this.resource = resource;
@@ -23,5 +28,10 @@ public class ConfigLoadException extends RuntimeException
 	public boolean isResource() 
 	{
 		return this.resource;
+	}
+	
+	private static String createMessageFormat(String message) 
+	{
+		return message + " the config '%s' due to: %s";
 	}
 }
