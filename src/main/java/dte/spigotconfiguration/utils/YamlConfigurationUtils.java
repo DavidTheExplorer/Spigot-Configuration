@@ -9,6 +9,44 @@ import org.bukkit.plugin.Plugin;
 
 public class YamlConfigurationUtils
 {
+	public static File loadDataFolder(Plugin plugin) 
+	{
+		File pluginFolder = plugin.getDataFolder();
+
+		if(!pluginFolder.exists())
+			pluginFolder.mkdirs();
+
+		return pluginFolder;
+	}
+	
+	public static String toResourcePath(String path) 
+	{
+		path = path.replace("/", File.separator);
+
+		if(!path.endsWith(".yml"))
+			path += ".yml";
+
+		return path;
+	}
+	
+	public static YamlConfiguration loadConfiguration(Plugin plugin, File file, boolean resource) throws IOException 
+	{
+		if(resource)
+		{
+			if(file.exists())
+				return YamlConfigurationUtils.loadResourceConfig(plugin, file);
+			
+			plugin.saveResource(getInternalPath(plugin, file), false);
+
+			return YamlConfiguration.loadConfiguration(file);
+		}
+
+		file.getParentFile().mkdirs();
+		file.createNewFile();
+
+		return YamlConfiguration.loadConfiguration(file);
+	}
+	
 	public static YamlConfiguration loadResourceConfig(Plugin plugin, File file) throws IOException
 	{
 		YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
