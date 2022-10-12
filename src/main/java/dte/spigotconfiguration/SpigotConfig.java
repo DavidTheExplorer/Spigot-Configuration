@@ -183,8 +183,6 @@ public class SpigotConfig
 				if(file.exists())
 					return YamlConfigurationUtils.loadResourceConfig(plugin, file);
 				
-				System.out.println("fuck: " + getInternalPath(plugin, file));
-
 				plugin.saveResource(getInternalPath(plugin, file), false);
 
 				return YamlConfiguration.loadConfiguration(file);
