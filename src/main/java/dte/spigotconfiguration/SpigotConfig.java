@@ -24,35 +24,24 @@ public class SpigotConfig
 	private final File file;
 	private final YamlConfiguration config;
 	
-	private SpigotConfig(File file, YamlConfiguration config)
+	protected SpigotConfig(Builder builder)
 	{
-		this.file = file;
-		this.config = config;
+		this.file = builder.file;
+		this.config = builder.config;
 	}
 
 	public static SpigotConfig byPath(Plugin plugin, String path) throws ConfigLoadException
 	{
-		return byPath(plugin, path, false);
+		return new Builder(plugin)
+				.byPath(path)
+				.build();
 	}
-
-	public static SpigotConfig fromInternalResource(Plugin plugin, String resourceName) throws ConfigLoadException 
+	
+	public static SpigotConfig fromInternalResource(Plugin plugin, String resourceName) throws ConfigLoadException
 	{
-		return byPath(plugin, resourceName, true);
-	}
-
-	private static SpigotConfig byPath(Plugin plugin, String path, boolean resource) throws ConfigLoadException
-	{
-		try 
-		{
-			File file = new File(loadDataFolder(plugin), toInternalPath(path));
-			YamlConfiguration config = getConfiguration(plugin, file, resource);
-
-			return new SpigotConfig(file, config);
-		}
-		catch(Exception exception) 
-		{
-			throw new ConfigLoadException(path, resource, exception);
-		}
+		return new Builder(plugin)
+				.fromInternalResource(resourceName)
+				.build();
 	}
 
 	public YamlConfiguration getStorage() 
@@ -101,30 +90,6 @@ public class SpigotConfig
 
 
 
-	private static YamlConfiguration getConfiguration(Plugin plugin, File file, boolean resource) throws IOException 
-	{
-		if(resource) 
-		{
-			if(file.exists())
-			{
-				return loadResourceConfig(plugin, file);
-			}
-			else
-			{
-				plugin.saveResource(file.getName(), false);
-				
-				return YamlConfiguration.loadConfiguration(file);
-			}
-		}
-
-		file.getParentFile().mkdirs();
-		file.createNewFile();
-
-		return YamlConfiguration.loadConfiguration(file);
-	}
-
-
-
 	/*
 	 * Delegation of common methods to YamlConfiguration
 	 */
@@ -166,5 +131,70 @@ public class SpigotConfig
 	public Map<String, Object> getValues(boolean deep) 
 	{
 		return this.config.getValues(deep);
+	}
+
+	
+	
+	public static class Builder
+	{
+		private final Plugin plugin;
+		private File file;
+		private YamlConfiguration config;
+		
+		public Builder(Plugin plugin) 
+		{
+			this.plugin = plugin;
+		}
+
+		public Builder byPath(String path) throws ConfigLoadException
+		{
+			return byPath(path, false);
+		}
+
+		public Builder fromInternalResource(String resourceName) throws ConfigLoadException
+		{
+			return byPath(resourceName, true);
+		}
+		
+		private Builder byPath(String path, boolean resource) throws ConfigLoadException
+		{
+			try 
+			{
+				this.file = new File(loadDataFolder(this.plugin), toInternalPath(path));
+				this.config = loadConfiguration(this.plugin, this.file, resource);
+				return this;
+			}
+			catch(IOException exception) 
+			{
+				throw new ConfigLoadException(path, resource, exception);
+			}
+		}
+
+		public SpigotConfig build()
+		{
+			return new SpigotConfig(this);
+		}
+		
+		private static YamlConfiguration loadConfiguration(Plugin plugin, File file, boolean resource) throws IOException 
+		{
+			if(resource) 
+			{
+				if(file.exists())
+				{
+					return loadResourceConfig(plugin, file);
+				}
+				else
+				{
+					plugin.saveResource(file.getName(), false);
+					
+					return YamlConfiguration.loadConfiguration(file);
+				}
+			}
+
+			file.getParentFile().mkdirs();
+			file.createNewFile();
+
+			return YamlConfiguration.loadConfiguration(file);
+		}
 	}
 }
