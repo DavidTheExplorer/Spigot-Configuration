@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -143,6 +144,11 @@ public class SpigotConfig
 	{
 		return this.config.getValues(deep);
 	}
+	
+	public boolean contains(String path) 
+	{
+		return this.config.contains(path);
+	}
 
 	
 	
@@ -151,6 +157,7 @@ public class SpigotConfig
 		private final Plugin plugin;
 		
 		private String namePattern;
+		private List<Function<YamlConfiguration, Map<String, Object>>> defaultsSuppliers = new ArrayList<>();
 		
 		private File file;
 		private YamlConfiguration config;
@@ -185,20 +192,10 @@ public class SpigotConfig
 			return this;
 		}
 
-		public Builder applyDefaults() throws ConfigLoadException
+		public Builder supplyDefaults(Function<YamlConfiguration, Map<String, Object>> defaultsSupplier) 
 		{
-			Objects.requireNonNull(this.config, "Cannot apply default values for an unloaded config!");
-			
-			try 
-			{
-				this.config.options().copyDefaults(true);
-				this.config.save(this.file);
-				return this;
-			} 
-			catch(Exception exception)
-			{
-				throw new ConfigLoadException("Cannot apply default values to", getInternalPath(this.plugin, file), this.resource, exception);
-			}
+			this.defaultsSuppliers.add(defaultsSupplier);
+			return this;
 		}
 
 		private Builder byPath(String path, boolean resource) throws ConfigLoadException
@@ -213,7 +210,7 @@ public class SpigotConfig
 				this.resource = resource;
 				return this;
 			}
-			catch(IOException exception) 
+			catch(IOException exception)
 			{
 				throw new ConfigLoadException(path, resource, exception);
 			}
@@ -221,7 +218,25 @@ public class SpigotConfig
 
 		public SpigotConfig build()
 		{
+			loadDefaults();
+			
 			return new SpigotConfig(this);
+		}
+		
+		private void loadDefaults() throws ConfigLoadException
+		{
+			Objects.requireNonNull(this.config, "Cannot apply default values for an unloaded config!");
+			
+			try 
+			{
+				this.config.options().copyDefaults(true);
+				this.defaultsSuppliers.forEach(supplier -> supplier.apply(this.config).forEach(this.config::set));
+				this.config.save(this.file);
+			} 
+			catch(Exception exception)
+			{
+				throw new ConfigLoadException("Cannot apply default values to", getInternalPath(this.plugin, file), this.resource, exception);
+			}
 		}
 	}
 }
