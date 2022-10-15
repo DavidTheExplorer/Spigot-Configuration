@@ -167,12 +167,6 @@ public class SpigotConfig
 		{
 			this.plugin = plugin;
 		}
-		
-		public Builder withNamePattern(String pattern) 
-		{
-			this.namePattern = pattern;
-			return this;
-		}
 
 		public Builder byPath(String path) throws ConfigLoadException
 		{
@@ -182,6 +176,12 @@ public class SpigotConfig
 		public Builder fromInternalResource(String resourceName) throws ConfigLoadException
 		{
 			return byPath(resourceName, true);
+		}
+		
+		public Builder withNamePattern(String pattern) 
+		{
+			this.namePattern = pattern;
+			return this;
 		}
 
 		public Builder withDefault(String path, Object value) 
@@ -196,6 +196,23 @@ public class SpigotConfig
 		{
 			this.defaultsSuppliers.add(defaultsSupplier);
 			return this;
+		}
+		
+		public Builder loadDefaults() throws ConfigLoadException
+		{
+			Objects.requireNonNull(this.config, "Cannot apply default values for an unloaded config!");
+			
+			try 
+			{
+				this.config.options().copyDefaults(true);
+				this.defaultsSuppliers.forEach(supplier -> supplier.apply(this.config).forEach(this.config::set));
+				this.config.save(this.file);
+				return this;
+			} 
+			catch(Exception exception)
+			{
+				throw new ConfigLoadException("Cannot apply default values to", getInternalPath(this.plugin, file), this.resource, exception);
+			}
 		}
 
 		private Builder byPath(String path, boolean resource) throws ConfigLoadException
@@ -218,25 +235,7 @@ public class SpigotConfig
 
 		public SpigotConfig build()
 		{
-			loadDefaults();
-			
 			return new SpigotConfig(this);
-		}
-		
-		private void loadDefaults() throws ConfigLoadException
-		{
-			Objects.requireNonNull(this.config, "Cannot apply default values for an unloaded config!");
-			
-			try 
-			{
-				this.config.options().copyDefaults(true);
-				this.defaultsSuppliers.forEach(supplier -> supplier.apply(this.config).forEach(this.config::set));
-				this.config.save(this.file);
-			} 
-			catch(Exception exception)
-			{
-				throw new ConfigLoadException("Cannot apply default values to", getInternalPath(this.plugin, file), this.resource, exception);
-			}
 		}
 	}
 }
