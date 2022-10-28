@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.logging.Logger;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -23,17 +24,20 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
+import dte.spigotconfiguration.converter.ValueConverter;
 import dte.spigotconfiguration.exceptions.ConfigLoadException;
 
 public class SpigotConfig
 {
 	private final File file;
 	private final YamlConfiguration config;
+	private final Logger logger;
 	
 	protected SpigotConfig(Builder builder)
 	{
 		this.file = builder.file;
 		this.config = builder.config;
+		this.logger = builder.logger;
 	}
 
 	public static SpigotConfig byPath(Plugin plugin, String path) throws ConfigLoadException
@@ -88,8 +92,25 @@ public class SpigotConfig
 
 	public <T> List<T> getList(String path, Class<T> typeClass)
 	{
+		return getList(path, typeClass::cast);
+	}
+	
+	public <T> List<T> getList(String path, ValueConverter<T> valueConverter)
+	{
 		return this.config.getList(path, new ArrayList<>()).stream()
-				.map(typeClass::cast)
+				.map(object -> 
+				{
+					try 
+					{
+						return valueConverter.convertFrom(object);
+					}
+					catch(ConfigLoadException exception) 
+					{
+						this.logger.severe(exception.getMessage());
+						return null;
+					}
+				})
+				.filter(Objects::nonNull)
 				.collect(toList());
 	}
 
@@ -156,12 +177,14 @@ public class SpigotConfig
 	{
 		private final Plugin plugin;
 		
-		private String namePattern;
-		private List<Function<YamlConfiguration, Map<String, Object>>> defaultsSuppliers = new ArrayList<>();
-		
+		//necessary
 		private File file;
 		private YamlConfiguration config;
-		private boolean resource;
+		
+		//optional
+		private Logger logger;
+		private String namePattern;
+		private List<Function<YamlConfiguration, Map<String, Object>>> defaultsSuppliers = new ArrayList<>();
 		
 		public Builder(Plugin plugin) 
 		{
@@ -183,7 +206,13 @@ public class SpigotConfig
 			this.namePattern = pattern;
 			return this;
 		}
-
+		
+		public Builder logTo(Logger logger) 
+		{
+			this.logger = logger;
+			return this;
+		}
+		
 		public Builder withDefault(String path, Object value) 
 		{
 			Objects.requireNonNull(this.config, "Cannot set a default value for an unloaded config!");
@@ -211,7 +240,7 @@ public class SpigotConfig
 			} 
 			catch(Exception exception)
 			{
-				throw new ConfigLoadException("Cannot apply default values to", getInternalPath(this.plugin, file), this.resource, exception);
+				throw new ConfigLoadException(getInternalPath(this.plugin, this.file), "Cannot apply default values due to %cause%", exception);
 			}
 		}
 
@@ -224,17 +253,19 @@ public class SpigotConfig
 			{
 				this.file = new File(loadDataFolder(this.plugin), toResourcePath(path));
 				this.config = loadConfiguration(this.plugin, this.file, resource);
-				this.resource = resource;
 				return this;
 			}
 			catch(IOException exception)
 			{
-				throw new ConfigLoadException(path, resource, exception);
+				throw new ConfigLoadException(path, exception);
 			}
 		}
 
 		public SpigotConfig build()
 		{
+			if(this.logger == null)
+				this.logger = this.plugin.getLogger();
+			
 			return new SpigotConfig(this);
 		}
 	}

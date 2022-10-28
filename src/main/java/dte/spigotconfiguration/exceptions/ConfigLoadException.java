@@ -1,37 +1,34 @@
 package dte.spigotconfiguration.exceptions;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
+
 public class ConfigLoadException extends RuntimeException
 {
+	private final String path;
+	
 	private static final long serialVersionUID = 1914688087421355295L;
 	
-	private final String path;
-	private boolean resource;
-	
-	public ConfigLoadException(String path, boolean resource, Throwable cause) 
+	public ConfigLoadException(String path, String message) 
 	{
-		this("Cannot load", path, resource, cause);
-	}
-	
-	public ConfigLoadException(String message, String path, boolean resource, Throwable cause) 
-	{
-		super(String.format(createMessageFormat(message), path, cause.getMessage()), cause);
+		super(message);
 		
 		this.path = path;
-		this.resource = resource;
 	}
 	
-	public String getPath() 
+	public ConfigLoadException(String path, String message, Throwable cause) 
+	{
+		this(path, String.format("Unable to load '%s' due to: %s", path, message.replace("%cause%", ExceptionUtils.getMessage(cause))));
+		
+		initCause(cause);
+	}
+	
+	public ConfigLoadException(String path, Throwable cause) 
+	{
+		this(path, ExceptionUtils.getMessage(cause), cause);
+	}
+	
+	public String getPath()
 	{
 		return this.path;
-	}
-	
-	public boolean isResource() 
-	{
-		return this.resource;
-	}
-	
-	private static String createMessageFormat(String message) 
-	{
-		return message + " the config '%s' due to: %s";
 	}
 }
